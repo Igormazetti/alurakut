@@ -299,7 +299,7 @@ export function OrkutNostalgicIconSet(props) {
                     src={`https://alurakut.vercel.app/icons/${icon}.svg`}
                     style={{
                       marginRight: "2px",
-                      opacity: isHeartActive ? 1 : "0.5",
+                      opacity: isHeartActive || icon === "heart" ? 1 : "0.5",
                     }}
                   />
                 );
