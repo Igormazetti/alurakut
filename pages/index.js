@@ -56,13 +56,8 @@ function ProfileRelationsBox(propriedades) {
 }
 
 export default function Home() {
-  const [comunidades, setComunidades] = React.useState([
-    {
-      id: "16132554",
-      title: "Eu odeio acordar cedo",
-      image: "https://alurakut.vercel.app/capa-comunidade-01.jpg",
-    },
-  ]);
+  const usuarioAleatorio = "Igormazetti";
+  const [comunidades, setComunidades] = React.useState([]);
   // const comunidades = comunidades[0];
   // const alteradorDeComunidades/setComunidades = comunidades[1];
   // const comunidades = ["Alurakut"];
@@ -79,14 +74,38 @@ export default function Home() {
 
   const [seguidores, setSeguidores] = React.useState([]);
   React.useEffect(function () {
-    const seguidores = fetch(
-      "https://api.github.com/users/Igormazetti/followers"
-    )
+    fetch("https://api.github.com/users/Igormazetti/followers")
       .then(function (respostaDoServidor) {
         return respostaDoServidor.json();
       })
       .then(function (respostaCompleta) {
         setSeguidores(respostaCompleta);
+      });
+
+    //API GraphQL
+    fetch("https://graphql.datocms.com/", {
+      method: "POST",
+      headers: {
+        Authorization: "b9e6c6cb543bc447617194ea1f46a7",
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        query: `query {
+        allCommunities {
+          id 
+          title
+          imageUrl
+          creatorSlug
+        }
+      }`,
+      }),
+    })
+      .then((response) => response.json())
+      .then((respostaCompleta) => {
+        const comunidadesVindasDoDato = respostaCompleta.data.allCommunities;
+        console.log(comunidadesVindasDoDato);
+        setComunidades(comunidadesVindasDoDato);
       });
   }, []);
 
@@ -115,12 +134,24 @@ export default function Home() {
                 const dadosDoForm = new FormData(e.target);
 
                 const comunidade = {
-                  id: new Date().toISOString(),
-                  titulo: dadosDoForm.get("title"),
-                  image: dadosDoForm.get("image"),
+                  title: dadosDoForm.get("title"),
+                  imageUrl: dadosDoForm.get("image"),
+                  creatorSlug: usuarioAleatorio,
                 };
-                const comunidadesAtualizadas = [...comunidades, comunidade];
-                setComunidades(comunidadesAtualizadas);
+
+                fetch("/api/comunidades", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(comunidade),
+                }).then(async (response) => {
+                  const dados = await response.json();
+                  console.log(dados.registroCriado);
+                  const comunidade = dados.registroCriado;
+                  const comunidadesAtualizadas = [...comunidades, comunidade];
+                  setComunidades(comunidadesAtualizadas);
+                });
               }}
             >
               <div>
@@ -154,8 +185,11 @@ export default function Home() {
               {comunidades.map((itemAtual) => {
                 return (
                   <li key={itemAtual.id}>
-                    <a href={`/users/${itemAtual.title}`} key={itemAtual.title}>
-                      <img src={itemAtual.image} />
+                    <a
+                      href={`/communities/${itemAtual.id}`}
+                      key={itemAtual.title}
+                    >
+                      <img src={itemAtual.imageUrl} />
                       <span>{itemAtual.title}</span>
                     </a>
                   </li>
@@ -166,15 +200,16 @@ export default function Home() {
 
           <ProfileRelationsBoxWrapper>
             <h2 className="smallTitle">
-              Pessoas da Comunidade ({pessoasFavoritas.length})
+              Pessoas da Comunidade ({seguidores.length})
             </h2>
             <ul>
-              {pessoasFavoritas.map((itemAtual) => {
+              {seguidores.map((itemAtual) => {
+                console.log(seguidores);
                 return (
-                  <li key={itemAtual}>
-                    <a href={`/users/${itemAtual}`} key={itemAtual}>
-                      <img src={`https://github.com/${itemAtual}.png`} />
-                      <span>{itemAtual}</span>
+                  <li key={itemAtual.id}>
+                    <a href={itemAtual.html_url}>
+                      <img src={itemAtual.avatar_url} />
+                      <span>{itemAtual.login}</span>
                     </a>
                   </li>
                 );
